@@ -2507,19 +2507,19 @@ public class PlayerActivity extends Activity {
     private void addKhalidChapterMarkers() {
         try {
             final androidx.media3.ui.DefaultTimeBar timeBar = findViewById(androidx.media3.ui.R.id.exo_progress);
-            if (mPlayer != null && timeBar != null) {
-                mPlayer.addListener(new androidx.media3.common.Player.Listener() {
+            if (player != null && timeBar != null) {
+                player.addListener(new androidx.media3.common.Player.Listener() {
                     @Override
                     public void onTimelineChanged(androidx.media3.common.Timeline timeline, int reason) {
                         if (timeline.isEmpty()) return;
                         androidx.media3.common.Timeline.Window window = new androidx.media3.common.Timeline.Window();
-                        timeline.getWindow(mPlayer.getCurrentMediaItemIndex(), window);
+                        timeline.getWindow(player.getCurrentMediaItemIndex(), window);
                         
                         java.util.ArrayList<Long> chapters = new java.util.ArrayList<>();
                         for (int i = 0; i < timeline.getPeriodCount(); i++) {
                             androidx.media3.common.Timeline.Period period = new androidx.media3.common.Timeline.Period();
                             timeline.getPeriod(i, period);
-                            if (period.positionInWindowMs > 0L) chapters.add(period.positionInWindowMs);
+                            if (period.getPositionInWindowMs() > 0L) chapters.add(period.getPositionInWindowMs());
                         }
                         if (!chapters.isEmpty()) {
                             long[] adTimes = new long[chapters.size()];
