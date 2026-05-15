@@ -776,6 +776,7 @@ public class PlayerActivity extends Activity {
     @Override
     public void onStart() {
         super.onStart();
+        addKhalidChapterMarkers();
         alive = true;
         if (!(isTvBox && Build.VERSION.SDK_INT >= 31)) {
             updateSubtitleStyle(this);
@@ -2501,4 +2502,39 @@ public class PlayerActivity extends Activity {
                 }
         }
     };
+
+    // --- KHALID'S CUSTOM CHAPTER MARKERS ---
+    private void addKhalidChapterMarkers() {
+        try {
+            final androidx.media3.ui.DefaultTimeBar timeBar = findViewById(androidx.media3.ui.R.id.exo_progress);
+            if (mPlayer != null && timeBar != null) {
+                mPlayer.addListener(new androidx.media3.common.Player.Listener() {
+                    @Override
+                    public void onTimelineChanged(androidx.media3.common.Timeline timeline, int reason) {
+                        if (timeline.isEmpty()) return;
+                        androidx.media3.common.Timeline.Window window = new androidx.media3.common.Timeline.Window();
+                        timeline.getWindow(mPlayer.getCurrentMediaItemIndex(), window);
+                        
+                        java.util.ArrayList<Long> chapters = new java.util.ArrayList<>();
+                        for (int i = 0; i < timeline.getPeriodCount(); i++) {
+                            androidx.media3.common.Timeline.Period period = new androidx.media3.common.Timeline.Period();
+                            timeline.getPeriod(i, period);
+                            if (period.positionInWindowMs > 0L) chapters.add(period.positionInWindowMs);
+                        }
+                        if (!chapters.isEmpty()) {
+                            long[] adTimes = new long[chapters.size()];
+                            boolean[] playedAds = new boolean[chapters.size()];
+                            for (int i = 0; i < chapters.size(); i++) {
+                                adTimes[i] = chapters.get(i);
+                                playedAds[i] = false;
+                            }
+                            timeBar.setAdGroupTimesMs(adTimes, playedAds, adTimes.length);
+                        }
+                    }
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
