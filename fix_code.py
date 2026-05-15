@@ -1,14 +1,13 @@
-import re
+import os
 
-filepath = "app/src/main/java/com/brouken/player/PlayerActivity.kt"
+filepath = os.popen('find app -name "PlayerActivity.kt" | head -n 1').read().strip()
 
 with open(filepath, "r") as f:
-    content = f.read()
+    lines = f.readlines()
 
-# Define the custom feature
-custom_code = """
-    // --- CUSTOM CHAPTER MARKERS ---
-    private fun injectChapters() {
+custom_func = """
+    // --- KHALID'S CUSTOM CHAPTER MARKERS ---
+    private fun addKhalidChapterMarkers() {
         val timeBar = findViewById<androidx.media3.ui.DefaultTimeBar>(androidx.media3.ui.R.id.exo_progress)
         player?.addListener(object : androidx.media3.common.Player.Listener {
             override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int) {
@@ -16,18 +15,15 @@ custom_code = """
                 val window = androidx.media3.common.Timeline.Window()
                 player?.let { activePlayer ->
                     timeline.getWindow(activePlayer.currentMediaItemIndex, window)
-                    val chapterTimesList = mutableListOf<Long>()
+                    val chapters = mutableListOf<Long>()
                     for (i in 0 until timeline.periodCount) {
                         val period = androidx.media3.common.Timeline.Period()
                         timeline.getPeriod(i, period)
-                        if (period.positionInWindowMs > 0) {
-                            chapterTimesList.add(period.positionInWindowMs)
-                        }
+                        if (period.positionInWindowMs > 0) chapters.add(period.positionInWindowMs)
                     }
-                    if (chapterTimesList.isNotEmpty()) {
-                        val adGroupTimesMs = chapterTimesList.toLongArray()
-                        val playedAdGroups = BooleanArray(adGroupTimesMs.size) { false } 
-                        timeBar?.setAdGroupTimesMs(adGroupTimesMs, playedAdGroups, adGroupTimesMs.size)
+                    if (chapters.isNotEmpty()) {
+                        val adTimes = chapters.toLongArray()
+                        timeBar?.setAdGroupTimesMs(adTimes, BooleanArray(adTimes.size) { false }, adTimes.size)
                     }
                 }
             }
@@ -35,13 +31,19 @@ custom_code = """
     }
 """
 
-# Inject the function exactly before the last closing bracket of the class
-content = re.sub(r'}(?=\s*$)', custom_code + '\n}', content)
+# Insert the function call safely into onResume
+for i, line in enumerate(lines):
+    if "super.onResume()" in line or "super.onStart()" in line:
+        lines[i] = line + "        addKhalidChapterMarkers()\n"
+        break
 
-# Inject the function call right into onStart() so it actually runs
-content = content.replace("override fun onStart() {", "override fun onStart() {\n        injectChapters()")
+# Insert the custom function right before the final closing bracket of the class
+for i in range(len(lines)-1, -1, -1):
+    if lines[i].strip() == '}':
+        lines.insert(i, custom_func)
+        break
 
 with open(filepath, "w") as f:
-    f.write(content)
+    f.writelines(lines)
 
-print("✅ Code injected perfectly inside the class!")
+print("✅ Pristine file restored and Khalid's code flawlessly injected!")
